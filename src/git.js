@@ -4,6 +4,42 @@ import { execa } from 'execa';
 
 const git = simpleGit();
 
+async function hasUpstream(branch) {
+  try {
+    await git.raw(['rev-parse', '--abbrev-ref', `${branch}@{upstream}`]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function remoteBranchExists(remote, branch) {
+  try {
+    const result = await git.raw(['ls-remote', '--heads', remote, branch]);
+    return result.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function ensureUpstream(remote = 'origin') {
+  const status = await git.status();
+  const currentBranch = status.current;
+
+  if (await hasUpstream(currentBranch)) {
+    return { currentBranch, hasUpstream: true, remoteExists: true };
+  }
+
+  if (await remoteBranchExists(remote, currentBranch)) {
+    await git.branch(['--set-upstream-to', `${remote}/${currentBranch}`, currentBranch]);
+    console.log(chalk.green(`Upstream set to ${remote}/${currentBranch}`));
+    return { currentBranch, hasUpstream: true, remoteExists: true };
+  }
+
+  console.log(chalk.yellow(`No upstream exists for ${currentBranch} yet. It will be created on first push.`));
+  return { currentBranch, hasUpstream: false, remoteExists: false };
+}
+
 /**
  * Executes a git command with logging.
  * @param {string} command - Command name.
@@ -51,14 +87,15 @@ export async function commit(message) {
  * Pushes changes to the remote.
  */
 export async function push() {
-  const status = await git.status();
-  const currentBranch = status.current;
+  const { currentBranch, hasUpstream } = await ensureUpstream();
 
   if (currentBranch === 'main' || currentBranch === 'master') {
     console.log(chalk.yellow(`⚠️ Warning: Pushing directly to ${currentBranch}.`));
   }
 
-  return gitAction(`Push to ${currentBranch}`, () => git.push('origin', currentBranch));
+  return gitAction(`Push to ${currentBranch}`, () =>
+    hasUpstream ? git.push('origin', currentBranch) : git.push(['-u', 'origin', currentBranch])
+  );
 }
 
 /**
@@ -67,6 +104,13 @@ export async function push() {
 export async function pull() {
   return gitAction('Pull with Rebase', async () => {
     try {
+      const { currentBranch, hasUpstream, remoteExists } = await ensureUpstream();
+
+      if (!hasUpstream && !remoteExists) {
+        console.log(chalk.yellow(`Skipping pull because origin/${currentBranch} does not exist yet.`));
+        return;
+      }
+
       await git.pull(['--rebase']);
     } catch (error) {
       if (error.message.includes('CONFLICT')) {
