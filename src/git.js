@@ -36,7 +36,7 @@ export async function getStatus() {
  */
 export async function addFiles(files) {
   if (files.length === 0) return;
-  return gitAction(`Adding ${files.length} files`, () => git.add(files));
+  return gitAction(`Adding ${files.length} files`, () => git.add(['--all']));
 }
 
 /**

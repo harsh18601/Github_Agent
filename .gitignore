@@ -7,3 +7,5 @@ build/
 coverage/
 .vscode/
 .idea/
+temp.env.example
+test-secret.txt

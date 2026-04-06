@@ -1,13 +1,20 @@
 import { scanFiles } from '../src/security.js';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 describe('Security Module', () => {
-  const testFile = path.resolve('test-secret.txt');
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-agent-security-'));
+  const testFile = path.join(tempDir, 'test-secret.txt');
+  const exampleFile = path.join(tempDir, 'temp.env.example');
 
   afterEach(() => {
     if (fs.existsSync(testFile)) {
-      fs.unlinkSync(testFile);
+      fs.rmSync(testFile, { force: true });
+    }
+
+    if (fs.existsSync(exampleFile)) {
+      fs.rmSync(exampleFile, { force: true });
     }
   });
 
@@ -33,13 +40,10 @@ describe('Security Module', () => {
   });
 
   test('should not flag placeholder env example values', async () => {
-    const exampleFile = path.resolve('temp.env.example');
     fs.writeFileSync(exampleFile, 'GROQ_API_KEY=your_groq_api_key_here\nGITHUB_TOKEN=your_github_token_here');
 
     const result = await scanFiles([exampleFile]);
     expect(result.safe).toBe(true);
-
-    fs.unlinkSync(exampleFile);
   });
 
   test('should not flag ordinary long strings in source files', async () => {
