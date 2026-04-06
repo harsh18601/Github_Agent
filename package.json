@@ -9,7 +9,7 @@
     "dev": "node index.js status",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
