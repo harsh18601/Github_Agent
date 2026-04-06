@@ -5,6 +5,7 @@ import * as security from './security.js';
 import * as openai from './groq.js';
 import * as analyzer from './analyzer.js';
 import Monitor from './monitor.js';
+import { getConfigPath, initializeConfig, loadConfig } from './config.js';
 
 const program = new Command();
 
@@ -68,7 +69,7 @@ function validateKeyword(value, expected, example) {
     return true;
   }
 
-  console.error(chalk.red(`\nInvalid usage. Try \`node index.js ${example}\`.`));
+  console.error(chalk.red(`\nInvalid usage. Try \`github-agent ${example}\`.`));
   return false;
 }
 
@@ -76,6 +77,27 @@ program
   .name('github-agent')
   .description('Advanced Autonomous AI GitHub DevOps Agent')
   .version('1.0.0');
+
+program
+  .command('init')
+  .description('Create a repo-local .github-agent.json configuration file')
+  .action(() => {
+    const result = initializeConfig();
+
+    if (result.created) {
+      console.log(chalk.green(`Created ${result.path}`));
+    } else {
+      console.log(chalk.yellow(`Config already exists at ${result.path}`));
+    }
+  });
+
+program
+  .command('config')
+  .description('Show the resolved config for the current repository')
+  .action(() => {
+    console.log(chalk.cyan(`\nConfig Path: ${getConfigPath()}`));
+    console.log(JSON.stringify(loadConfig(), null, 2));
+  });
 
 program
   .command('status')
@@ -142,7 +164,12 @@ program
   .command('watch')
   .description('Start file monitoring and auto-sync changes')
   .action(() => {
-    const monitor = new Monitor();
+    const config = loadConfig();
+    const monitor = new Monitor(process.cwd(), {
+      batchTimeout: config.watch.batchTimeout,
+      ignored: config.watch.ignored,
+    });
+
     monitor.start();
 
     monitor.on('changes', async (files) => {

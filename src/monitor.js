@@ -21,7 +21,7 @@ class Monitor extends EventEmitter {
       '**/package-lock.json',
       '**/yarn.lock',
       '**/.DS_Store'
-    ];
+    ].concat(options.ignored || []);
     this.changedFiles = new Set();
     this.batchTimer = null;
     this.watcher = null;

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Advanced Autonomous AI GitHub DevOps Agent",
   "main": "index.js",
+  "bin": {
+    "github-agent": "./index.js"
+  },
   "type": "module",
   "scripts": {
     "start": "node index.js",

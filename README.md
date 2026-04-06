@@ -1,55 +1,123 @@
-# AI GitHub DevOps Agent
+# GitHub Agent
 
-An Advanced Autonomous AI GitHub DevOps Agent that acts as a senior software engineer, DevOps engineer, and code reviewer combined. It safely manages local repositories and synchronizes them with GitHub.
+GitHub Agent is a reusable CLI that can run inside any Git repository and automate the normal Git loop for you:
 
-## 🚀 Features
+- watch files
+- analyze changes
+- generate commit messages
+- run lint/tests
+- pull with rebase
+- set upstream automatically
+- push to GitHub
 
-- **File Monitoring**: Continuously watches the project directory for changes.
-- **Change Analysis**: Automatically categorizes changes (feat, fix, refactor, etc.) and assesses risk.
-- **Intelligent Commits**: Generates semantic commit messages using Groq.
-- **Security Scanner**: Automatically scans for API keys and sensitive data before committing.
-- **Smart Pull/Push**: Handles rebases and conflicts intelligently.
-- **AI Code Review**: Provides inline suggestions and refactoring ideas.
-- **CLI Interface**: Easy-to-use commands for daily workflow.
+## Install
 
-## 🛠️ Tech Stack
+### Use in this repo
 
-- **Runtime**: Node.js
-- **Git**: [simple-git](https://github.com/steveukx/git-js)
-- **Monitoring**: [chokidar](https://github.com/paulmillr/chokidar)
-- **AI**: Groq API
-- **CLI**: [commander](https://github.com/tj/commander.js)
+```bash
+npm install
+node index.js status
+```
 
-## 📦 Installation
+### Use globally on your machine
 
-1. Clone the repository:
-   ```bash
-   git clone <repo-url>
-   cd Github_Agent
-   ```
+From this project:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+npm link
+```
 
-3. Set up environment variables:
-   Copy `.env.example` to `.env` and add your keys:
-   ```bash
-   cp .env.example .env
-   ```
+Then inside any other Git project:
 
-## 🎮 Commands
+```bash
+cd /path/to/your-project
+github-agent init
+github-agent watch
+```
 
-- `node index.js status`: Show current status.
-- `node index.js push now`: Analyze, commit, and push changes.
-- `node index.js pull latest`: Safe pull with conflict handling.
-- `node index.js sync repo`: Pull, resolve, and push.
-- `node index.js review code`: Run AI code review.
-- `node index.js create pr`: Push and create a pull request.
+## Environment Variables
 
-## 🛡️ Safety Rules
+Create a `.env` file in the project where you want the agent to run:
 
-- Safety > automation.
-- Never overwrite critical code without confirmation.
-- Transparent action plans before execution.
+```env
+GROQ_API_KEY=your_groq_api_key_here
+GITHUB_TOKEN=your_github_token_here
+PORT=3000
+DEBUG=true
+```
+
+## Per-Project Config
+
+Run this in any repository:
+
+```bash
+github-agent init
+```
+
+That creates a `.github-agent.json` file like this:
+
+```json
+{
+  "lintCommand": "npm run lint",
+  "testCommand": "npm test",
+  "watch": {
+    "batchTimeout": 5000,
+    "ignored": []
+  }
+}
+```
+
+You can change it per project. Example:
+
+```json
+{
+  "lintCommand": "pnpm lint",
+  "testCommand": "pnpm test",
+  "watch": {
+    "batchTimeout": 3000,
+    "ignored": ["**/.next/**", "**/coverage/**"]
+  }
+}
+```
+
+If a project has no lint or test script, the agent skips that step automatically unless you configure a command.
+
+## Commands
+
+You can use either the local form:
+
+```bash
+node index.js status
+node index.js push now
+node index.js watch
+```
+
+Or the global form after `npm link`:
+
+```bash
+github-agent status
+github-agent push now
+github-agent pull latest
+github-agent sync repo
+github-agent review code
+github-agent watch
+github-agent config
+github-agent init
+```
+
+## How To Use In Another Project
+
+1. Install/link this agent once.
+2. Go to the other repository.
+3. Add that repo's `.env`.
+4. Run `github-agent init`.
+5. Run `github-agent watch`.
+
+After that, the agent watches that repository and handles commit/pull/push automatically.
+
+## Notes
+
+- The agent works against the current working directory, so always run it from the root of the repository you want to automate.
+- Upstream branch setup is automatic on first push.
+- The repository must still be a valid Git repo with a working remote.

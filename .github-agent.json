@@ -1,0 +1,8 @@
+{
+  "lintCommand": "npm run lint",
+  "testCommand": "npm test",
+  "watch": {
+    "batchTimeout": 5000,
+    "ignored": []
+  }
+}
