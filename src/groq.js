@@ -4,6 +4,35 @@ import chalk from 'chalk';
 
 dotenv.config();
 
+function normalizeCommitMessage(content) {
+  if (!content) {
+    return 'chore: update files';
+  }
+
+  const lines = content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    const cleaned = line
+      .replace(/^[-*#`]+/, '')
+      .replace(/[*`]/g, '')
+      .trim();
+
+    if (/^(feat|fix|docs|style|refactor|perf|test|chore)(\([^)]*\))?:\s+.+/i.test(cleaned)) {
+      return cleaned;
+    }
+  }
+
+  const firstLine = lines[0]
+    .replace(/^[-*#`]+/, '')
+    .replace(/[*`]/g, '')
+    .trim();
+
+  return firstLine || 'chore: update files';
+}
+
 function getGroqClient() {
   const apiKey = process.env.GROQ_API_KEY;
 
@@ -25,12 +54,16 @@ export async function generateCommitMessage(diffText) {
   }
 
   const prompt = `
-    Analyze the following Git diff and generate a semantic commit message in the format:
-    type(scope): short summary
+    Analyze the following Git diff and return exactly one plain-text Git commit subject.
+    Output rules:
+    - Return exactly one line
+    - No markdown
+    - No bullets
+    - No code fences
+    - No labels like "Commit message"
+    - Use this format only: type(scope): short summary
 
-    - bullet points of changes
-
-    Types: feat, fix, docs, style, refactor, perf, test, chore.
+    Allowed types: feat, fix, docs, style, refactor, perf, test, chore.
     Example: feat(auth): add JWT login flow
 
     Diff:
@@ -45,7 +78,7 @@ export async function generateCommitMessage(diffText) {
       temperature: 0.7,
     });
 
-    return response.choices[0].message.content?.trim() || 'chore: update files';
+    return normalizeCommitMessage(response.choices[0].message.content);
   } catch (error) {
     console.error(chalk.red('\nGroq error generating commit message:'));
     console.error(chalk.gray(error.message));
